@@ -1,0 +1,454 @@
+1) 
+Select * from table	
+
+query:{ 
+match_all:{} 
+} 
+
+2)
+select ip , port from ip_port
+limit 2
+
+GET ip-port/_search
+{
+  "_source": ["ip","port"],
+  "size": 2
+}
+
+3)select * from index
+where phrase = 'heuristic' and phrase = 'roots' and phrase = 'help' 
+
+{
+  "query": {
+    "match": {
+      "phrase": {
+        "query" : "heuristic roots help",
+        "operator" : "AND"
+      }
+    }
+  }
+}
+
+4) select * from index
+where position = 'research' or position = 'help' 
+or phras= 'research' or phrase = 'help'
+{
+  "query": {
+    "multi_match": {
+        "query" : "research help"
+        , "fields": ["position","phrase"]
+    }
+  }
+}
+
+
+5) select * from index 
+where phrase  = 'roots heuristic coherent'
+
+{
+  "query": {
+    "match_phrase": {
+      "phrase": {
+        "query": "roots heuristic coherent"
+      }
+    }
+  }
+}
+
+
+6)select * from index 
+where gender = "female"
+
+{
+  "query": {
+    "terms": {
+      "gender": 
+        "female"
+    }
+  }
+}
+
+note : term query searches for the exact match of the search keyword against the field in the document.
+
+7)select * from index
+where company is not null 
+
+{
+    "query": {
+        "exists": {
+            "field": "company"
+        }
+    }
+}
+
+
+8)select * from index 
+where experience > 5 and experience <10
+
+{
+    "query": {
+        "range" : {
+            "experience" : {
+                "gte" : 5,
+                "lte" : 10
+            }
+        }
+    }
+}
+
+
+9)select * from index 
+where ids = 1 or id = 4
+
+{
+    "query": {
+        "ids" : {
+            "values" : ["1", "4"]
+        }
+    }
+}
+
+10)select * fom index 
+where name like 'al*'
+
+{
+  "query": {
+    "prefix": {
+      "name": "al"
+    }
+  }
+}
+
+11)select name , experience, salary from index
+order by experience desc
+
+{
+   "_source": ["name","experience","salary"], 
+  "sort": [
+    {
+      "experience": {
+        "order": "desc"
+      }
+    }
+  ],
+}
+
+12)select name , experience, salary from index
+order by experience,salary desc
+
+{
+  "_source": [
+    "name",
+    "experience",
+    "salary"
+  ],
+  "sort": [
+    {
+      "salary": {
+        "order": "desc"
+      }
+    },
+    {
+      "experience": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+
+
+A typical bool query structure would be like the below:
+
+{
+  "query": {
+    "bool" : {
+      "must" : [],
+      "filter": [],
+      "must_not" : [],
+      "should" : []
+    }
+  }
+}
+
+note: must ~ AND , should ~ or , filter sam as must but without score calculating 
+
+13) select * from index 
+where position = "manager" and experience >= 12
+
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "position": "manager"
+          }
+        },
+        {
+          "range": {
+            "experience": {
+              "gte": 12
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+14) select * from index
+where (position = "manager" and experience >= 12) or  phrase =  "versatile"
+
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "position": "manager"
+          }
+        },
+        {
+          "range": {
+            "experience": {
+              "gte": 12
+            }
+          }
+        }
+      ],
+    "should": [
+      {
+        "match": {
+          "phrase": "versatile"
+        }
+      }
+    ]
+    }
+  }
+}
+
+15) (company = Yamaha OR company = Yozio ) AND (position = manager OR position = associate ) AND (salary>=100000)
+POST employees/_search
+{
+    "query": {
+        "bool": {
+            "must": [
+              {
+                "bool": {
+                    "should": [{
+                        "match": {
+                            "company": "Talane"
+                        }
+                    }, {
+                        "match": {
+                            "company": "Yamaha"
+                        }
+                    }]
+                }
+            }, 
+            {
+                "bool": {
+                    "should": [
+                      {
+                        "match": {
+                            "position": "manager"
+                        }
+                    }, {
+                        "match": {
+                            "position": "Associate"
+                        }
+                    }
+                    ]
+                }
+            }, {
+                "bool": {
+                    "must": [
+                      {
+                        "range": {
+                          "salary": {
+                            "gte": 100000
+                          }
+                        }
+                      }
+                      ]
+                }
+            }]
+        }
+    }
+}
+
+
+
+16)
+select * from ip_port
+where a=53
+
+
+GET ip-port/_search
+{
+  "query": {
+  "match": {
+    "a": "53"
+  }  
+  }
+}
+
+or 
+
+Get ip_port/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "a": "53"
+          }
+        }
+      ]
+    }
+  }
+}
+
+
+
+
+17)
+select port from ip_port
+where ip='1.0.0.0' or ip='1.0.0.1'
+
+GET ip-port/_search
+{
+  "query": {
+   "bool": {
+     "filter": [
+       {"terms":{
+         "ip":["1.0.0.0","1.0.0.1"]
+       }
+       }
+     ]
+   } 
+  },
+  "fields": ["port"]
+}
+
+
+18)
+SELECT count(*)
+FROM   employees
+WHERE  first_name NOT IN ('Randy', 'Nathan');
+
+{
+  "query": {
+    "bool": {
+      "must_not": [
+        {
+          "terms": {
+            "first_name.keyword": ["Randy", "Nathan"]
+          }
+        }
+      ]
+    }
+  }
+
+
+The Aggregation Syntax:
+
+
+"aggs”: {
+    “name_of_aggregation”: {
+      “type_of_aggregation”: {
+        “field”: “document_field_name”
+}
+
+19) select count(clientip) as ip_count from index
+
+"aggs": {
+  "ip_count": {
+    "value_count": {
+      "field": "clientip" 
+                    }
+               }
+          }
+
+
+20) select count(distinict SKu) from index
+
+{
+  "size": 0, 
+ "aggs": {
+  "unique_skus": {
+    "cardinality": {
+      "field": "sku"
+    }
+  }
+}
+}
+
+21) select avg(price) as avg_price from product 
+where user = eddie
+
+{ "size": 0, 
+ "aggs": {
+        "User_based_filter" : {
+            "filter" : { 
+              "term": { 
+                "user": "eddie"}},
+            "aggs" : {
+                "avg_price" : { 
+                  "avg" : { 
+                    "field" : "products.price" } }
+            }}}}
+
+
+22) select user ,count(*) fro index
+group by user
+
+{
+  "size": 0, 
+ "aggs": {
+        "Terms_Aggregation" : {
+              "terms": { 
+                "field": "user"}}
+            }
+        }
+
+
+
+23) select  name , material ,sum(price)
+from products 
+where material = "wood"
+group by name , material 
+
+
+{
+    "aggs": {
+      "filter": {
+        "term": {
+          "material": "wood"
+        }
+     }
+  },
+    "aggs" : {
+        "product" : {
+            "terms" : {
+                "field" : "name"
+            },
+            "aggs" : {
+                "material" : {
+                    "terms" : {
+                        "field" : "material"
+                    "aggs" : {
+                        "sum_price" : {
+                            "sum" : {
+                                "field" : "price"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "size" : 0
+}
