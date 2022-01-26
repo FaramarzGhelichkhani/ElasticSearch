@@ -1,0 +1,59 @@
+{
+  "size": 0,
+"query": {"bool": {"must": [
+{"range": {"date": {"gte": "now-3d/d","lte": "now"}}},
+{"terms": {"ip": ["72.247.161.149","184.30.25.58"]}}]}}, 
+"aggs": {"group_by_app": {"terms": {"field": "app.app_id","size": 5,"order": { "_count": "desc"}},
+"aggs": {"ips": {"terms": {"field": "ip","size": 10,"order": { "total_traffics": "desc"}},
+"aggs": {"total_traffics": {"sum": {"field": "bsc", "script": "return doc['bsc'].value+doc['bcs'].value"}}}},
+"app_min": {"min_bucket": {"buckets_path": "ips>total_traffics"}}
+}}
+
+
+,
+"distinct_domain_name": {"terms": {"field": "domain_name.keyword","size": 10,"order": { "traffic": "desc"}},
+"aggs": {"traffic": {"sum": {"field": "bsc"}}}}
+
+,
+ "distinct asn": {
+    "terms": {
+      "field": "geoasn.asn",
+      "size": 10
+    }
+  },
+  "group_by_ip": {"terms": {"field": "ip","size": 2}
+      ,
+      "aggs": {
+        "total_hit": {
+          "sum": {
+            "field": "hits"
+          }
+        },
+        "total_traffic": {
+          "sum": {
+            "field": "bsc",
+            "script": "return doc['bsc'].value+doc['bcs'].value"
+          }
+        },
+        "domain_cardinal": {"cardinality": {"field": "domain_name.keyword"}}
+      }
+      },
+    "hit_stats": {
+      "min_bucket": {
+        "buckets_path": "group_by_ip>total_hit" 
+      }
+    },
+    
+    "traffic_stats": {
+      "stats_bucket": {
+        "buckets_path": "group_by_ip>total_traffic" 
+      }
+    },
+    "domain_name_cardinality_min": {
+      "min_bucket": {
+        "buckets_path": "group_by_ip>domain_cardinal" 
+      }
+    }
+    
+}
+}
