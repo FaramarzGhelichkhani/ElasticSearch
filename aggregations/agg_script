@@ -1,0 +1,65 @@
+{
+"size": 0,
+"query": {"bool": {"must": [
+  {"range": {"date": {"gte": "now-3d/d","lte": "now"}}},
+  {"terms": {"ip": ["83.229.71.182","8.8.8.8","4.4.4.4"]
+  }}
+]}},
+"aggs": {
+            "ip": {
+                "terms": {
+                    "field": "ip",
+                    "size": 1000
+                }, "aggs": {
+                    "dns": {
+                        "terms": {
+                            "field": "domain_name.keyword",
+                            "size": 1000,
+                            "script": {
+                                "source": """
+                    def a=doc['domain_name.keyword'].value;
+                    def len=a.length();
+                    def split_path=a.splitOnToken('.');
+                    def rr=split_path.length;
+                    def sw=split_path[rr-1];
+                    def port=sw.indexOf(':'); 
+                    def dns_list = [];
+                    dns_list =['google.com', 'dns.google', 'kingupf2m5.xyz'] ;
+                  
+                    def res=[];
+                    
+                    if(port>0){len=port; sw=sw.substring(0,len)} 
+                    def final='';
+                    final+=split_path[rr-2];
+                    final+='.';
+                    final+=sw; 
+                    
+                    for(int i=0;i<dns_list.size();i++){if(dns_list[i]==final) {res.add(final)}}
+                    return res                    """
+
+                            }
+                        },
+                        "aggs": {
+                            "sub": {
+                                "cardinality": {
+                                    "field": "domain_name.keyword"
+                                }
+                            },
+                            "total_hits": {
+                                "sum": {
+                                    "field": "hits"
+
+                                }
+
+                            },
+                            "percent": {
+                                "normalize": {
+                                    "buckets_path": "total_hits", "method": "percent_of_sum", "format": "00.00%"}
+
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
