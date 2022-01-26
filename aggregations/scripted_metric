@@ -1,0 +1,171 @@
+{"size" : 0,
+        "query": {
+            "bool": {
+            "must": 
+            [
+                {
+                "range": {
+                    "date": {
+                    "gte": "now-3d/d",
+                    "lte": "now"
+                    }
+                }
+                },
+                {
+                "query_string": {
+                                "query": "(83.229.71.182) (129.151.70.129)",
+                                "default_field": "ip"
+                        
+                            }
+                }
+                
+            ]
+            }
+        },
+        "aggs": {
+            "ips": {
+            "terms": {
+                "field": "ip",
+                "size": 1000
+            },
+            "aggs":{
+             "ip_traffic": {
+                "sum": {
+                    "field": "traffic"
+                   
+                    
+                }
+                },
+            "port_traffic":{
+                "scripted_metric": {
+
+
+                    "init_script": {
+                    "source": "state.port = []; state.traff = []; ",
+                    "lang": "painless"
+                    },
+                    "map_script": {
+                    "source": "  state.port.add(doc['port'].value); state.traff.add(doc.traffic.value); ",
+                    "lang": "painless"
+                    },
+                    "combine_script": {
+                    "source": "return state;",
+                    "lang": "painless"
+                    },
+                    "reduce_script": {
+                    "source": """ def res = []; def a=[];def b= 0; a=[]; def r=0;
+                    for(int i=0;i<a.size();i++){ for(s in states){for(int j=0;j<s.port.size();j++){
+                                if(s.port[j]==a[i]){r=r+s.traff[j]}b=b+s.traff[j];
+                    }
+                                } res.add(r*100.0/b);b=0; r=0;
+                            }
+                    
+                    return res """,
+                    "lang": "painless"
+                    } 
+                }
+
+              }
+            }
+          }
+        }
+  }
+
+---------------------------------------------------------------------------------------
+---------------------------------------------------------------------------------------
+{
+        "size":0,
+        "query": {
+          "bool": {
+            "must":
+            [
+                {
+                "range": {
+                    "date": {
+                    "gte": "now-3d/d",
+                    "lte": "now"
+                    }
+                }},
+                {
+                    "query_string": {
+                        "query": "(83.229.71.182) (129.151.70.129)",
+                        "default_field": "ip"
+
+                }}
+
+            ]
+         }
+        },
+        "aggs": {
+            "ips": {
+            "terms": {
+                "field": "ip",
+                "size": 1000
+
+            },
+            "aggs": {
+                "domain_traff":{
+                  "scripted_metric": {
+                    "init_script": {
+                    "source": "state.doms = []; state.bsc = []; state.bcs=[]; ",
+                    "lang": "painless"
+                    },
+                    "map_script": {
+                    "source": "  state.doms.add(doc['domain_name.keyword'].value); state.bsc.add(doc.bsc.value); state.bcs.add(doc.bcs.value)",
+                    "lang": "painless"
+                    },
+                    "combine_script": {
+                    "source": "return state;",
+                    "lang": "painless"
+                    },
+                    "reduce_script": {
+                    "source": """  def r=0; def root_doms= []; def doms=[]; doms=["mainstaymath"];
+                    def firstIndex=0;def result=[];def secondIndex=0;def g=0; def le=0; def s3;def
+                     len2;def s;def port;def s2=[];def len;def org;  def path3=[];
+                      def path4=[];  def dom_list=[]; def flag=true; def traff=[]; def total=0;
+                    for(int i=0;i<doms.size();i++){traff.add(0)}
+                    for(ss in states){for(int j=0;j<ss.doms.size();j++){
+                        org=ss.doms[j];  len=org.length();  def concat='';def path=[];def path2=[]; total=total+ss.bcs[j]+ss.bsc[j];
+                       for(int a=len;a>0;a--){path.add(org.substring(a-1,a))} firstIndex=path.indexOf('.'); 
+                        s2=org.substring(firstIndex+1,len); le=s2.length(); for(int b=le;b>0;b--){path2.add(org.substring(b-1,b));}
+                        secondIndex=path2.indexOf('.'); g=firstIndex+secondIndex+1;  g=len-g; port=org.indexOf(':'); if(port>0){len=port} 
+                        if(secondIndex==-1 || firstIndex==0){g=0} for(int b=g;b<len;b++){ concat+=org.substring(b,b+1)} 
+                      for(int i=0;i<doms.size();i++){if(doms[i]==concat){traff[i]=traff[i]+ss.bcs[j]+ss.bsc[j]}}}}
+                    def traf =[];
+                    for(int i=0; i<traff.size();i++){traf.add(traff[i]*100.00/total)}
+                    return traff""",
+                    "lang": "painless"
+                    }
+               }},
+
+                "app_traffic":{
+                "scripted_metric": {
+                    "init_script": {
+                    "source": "state.ids = []; state.bsc = []; state.bcs=[]; ",
+                    "lang": "painless"
+                    },
+                    "map_script": {
+                    "source": "  state.ids.add(doc['app.app_id'].value); state.bsc.add(doc.bsc.value); state.bcs.add(doc.bcs.value)",
+                    "lang": "painless"
+                    },
+                    "combine_script": {
+                    "source": "return state;",
+                    "lang": "painless"
+                    },
+                    "reduce_script": {
+                    "source": """ def res = []; def a=[]; a=[931,27375]; def r=0; def total=0;
+                    for(int i=0;i<a.size();i++){ for(s in states){for(int j=0;j<s.ids.size();j++){
+                                if(s.ids[j]==a[i]){r=r+s.bcs[j]+s.bsc[j]} total=total+s.bcs[j]+s.bsc[j];
+                    }
+                                } res.add(r*1.00/total*1.00); r=0; total=0;
+                            }
+                   
+                    return res """
+                    "lang": "painless"
+                    }
+               }
+             }
+            }
+         }
+        }
+     }
