@@ -1,0 +1,29 @@
+{
+   "aggregations": {
+      "reseller_sale_sum": {
+         "aggregations": {
+            "sales": {
+               "sum": {
+                  "field": "hits"
+               }
+            },
+            "max_sales": {
+               "bucket_selector": {
+                  "buckets_path": {
+                     "var1": "sales"
+                  },
+                  "script": "params.var1 >= 1E9"
+               }
+            }
+         },
+         "terms": {
+            "field": "ip",
+            "order": {
+               "sales": "desc"
+            },
+            "size": 5
+         },
+      }
+   },
+   "size": 0
+}
