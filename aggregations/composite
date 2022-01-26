@@ -1,0 +1,43 @@
+{
+  "size": 0,
+"query": {"bool": {"must": [
+{"range": {"date": {"gte": "2022-01-09","lte": "2022-01-09"}}},
+{"terms": {"ip": ["23.38.169.203","23.38.169.202"]}}]}},
+"aggs": {
+    "my_buckets": {
+      "composite": {
+        "sources": [
+          {
+            "field1": {
+              "terms": {
+                "field": "ip"
+              }
+            }
+          },
+          {
+            "field2": {
+              "terms": {
+                "field": "app.app_id"
+              }
+            }
+          },
+         {
+            "field3": {
+              "terms": {
+                "field": "app.app_name.keyword"
+              }
+            }
+          }
+        ]
+      },"aggs":{
+        "total": {
+          "sum": {
+            "field": "hits"
+          }
+        }
+        }
+      }
+      }
+    }
+  }
+}
